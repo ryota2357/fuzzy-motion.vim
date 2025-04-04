@@ -10,6 +10,8 @@ const ESC = 27;
 const BS = 128;
 const C_H = 8;
 const C_W = 23;
+const SPACE = 32;
+const TILDE = 126;
 
 let namespace: number;
 let textPropId: number;
@@ -364,18 +366,12 @@ export const main: Entrypoint = async (denops) => {
           await mountTargets(denops, targets);
           await execute(denops, `redraw`);
 
-          let code: number | null = (await denops.call("getchar")) as
-            | number
-            | null;
+          let code = await denops.call("fuzzy_motion#_getchar");
           if (code === ENTER) {
             if (targets.length === 0) {
               return;
             }
             code = targets[0].char.charCodeAt(0);
-          }
-
-          if (!is.Number(code)) {
-            code = (await denops.call("char2nr", code)) as number;
           }
           assert(code, is.Number);
 
@@ -397,8 +393,9 @@ export const main: Entrypoint = async (denops) => {
           } else if (code === C_W) {
             targetCache = [];
             input = "";
-          } else if (code >= " ".charCodeAt(0) && code <= "~".charCodeAt(0)) {
-            input = `${input}${String.fromCharCode(code)}`;
+          } else if (SPACE <= code && code <= TILDE) {
+            const codeStr = await denops.call(`nr2char`, code) as string;
+            input = `${input}${codeStr}`;
             const targets = await getTarget({
               denops,
               words,
