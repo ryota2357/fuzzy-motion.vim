@@ -1,12 +1,9 @@
 import { getFzfResults } from "./fzf.ts";
 import { getKensakuResults } from "./kensaku.ts";
-import type { Denops } from "./mod.ts";
-import { globals } from "./mod.ts";
-import { execute } from "./mod.ts";
-import { assertNumber, assertString, isNumber } from "./mod.ts";
-import { Buffer } from "./mod.ts";
-
+import type { Denops, Entrypoint } from "./mod.ts";
+import { assert, execute, globals, is } from "./mod.ts";
 import type { Result, Target, Word } from "./types.ts";
+import { Buffer } from "node:buffer";
 
 const ENTER = 13;
 const ESC = 27;
@@ -299,7 +296,7 @@ export const jumpTarget = async (denops: Denops, target: Target) => {
   await denops.call("cursor", target.pos.line, target.pos.col + target.start);
 };
 
-export const main = async (denops: Denops): Promise<void> => {
+export const main: Entrypoint = async (denops) => {
   if (denops.meta.host === "nvim") {
     namespace = (await denops.call(
       "nvim_create_namespace",
@@ -313,7 +310,7 @@ export const main = async (denops: Denops): Promise<void> => {
 
   denops.dispatcher = {
     targets: async (input: unknown): Promise<ReadonlyArray<Target>> => {
-      assertString(input);
+      assert(input, is.String);
       targetCache = [];
       const words = await getWords(denops);
 
@@ -377,10 +374,10 @@ export const main = async (denops: Denops): Promise<void> => {
             code = targets[0].char.charCodeAt(0);
           }
 
-          if (!isNumber(code)) {
+          if (!is.Number(code)) {
             code = (await denops.call("char2nr", code)) as number;
           }
-          assertNumber(code);
+          assert(code, is.Number);
 
           if (code === ESC) {
             break;
